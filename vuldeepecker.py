@@ -9,74 +9,14 @@ At the end of each code gadget is binary value
 import os
 import sys
 
-from clean_gadget import clean_gadget
+import torch
+
+from cgd_data import CGDDataset
+from config import DefaultTrainConfig
+from blstm import BLSTM
+from fit import Fitter
 from vectorize_gadget import GadgetVectorizer
 
-
-def parse_file(filename):
-    with open(filename, "r", encoding="utf8") as file:
-        gadget = []
-        gadget_val = 0
-        for line in file:
-            stripped = line.strip()
-            if not stripped:
-                continue
-            if "-" * 33 in line and gadget:
-                yield clean_gadget(gadget), gadget_val
-                gadget = []
-            elif stripped.split()[0].isdigit():
-                if gadget:
-                    # Code line could start with number (somehow)
-                    if stripped.isdigit():
-                        gadget_val = int(stripped)
-                    else:
-                        gadget.append(stripped)
-            else:
-                gadget.append(stripped)
-
-
-"""
-modified from: https://github.com/johnb110/VDPython/blob/master/vuldeepecker.py 
-def get_vectors_df
-"""
-"""
-Uses gadget file parser to get gadgets and vulnerability indicators
-Assuming all gadgets can fit in memory, build list of gadget dictionaries
-    Dictionary contains gadgets and vulnerability indicator
-    Add each gadget to GadgetVectorizer
-Train GadgetVectorizer model, prepare for vectorization
-Loop again through list of gadgets
-    Vectorize each gadget and put vector into new list
-Convert list of dictionaries to dataframe when all gadgets are processed
-"""
-def get_vectors(filename, vector_length=100):
-    gadgets = []
-    count = 0
-    vectorizer = GadgetVectorizer(vector_length)
-    for gadget, val in parse_file(filename):
-        count += 1
-        print("Collecting gadgets...", count, end="\r")
-        vectorizer.add_gadget(gadget)
-        row = {"gadget" : gadget, "val" : val}
-        gadgets.append(row)
-    print('Found {} forward slices and {} backward slices'
-          .format(vectorizer.forward_slices, vectorizer.backward_slices))
-    print()
-    print("Training model...", end="\r")
-    vectorizer.train_model()
-    print()
-    vectors = []
-    count = 0
-    for gadget in gadgets:
-        count += 1
-        print("Processing gadgets...", count, end="\r")
-        vector = vectorizer.vectorize(gadget["gadget"])
-        row = {"vector" : vector, "val" : gadget["val"]}
-        vectors.append(row)
-    print()
-    # df = pandas.DataFrame(vectors)
-    # return df
-    return vectors
 
 """
 Gets filename, either loads vector DataFrame if exists or creates it if not
@@ -87,20 +27,26 @@ def main():
         print("Usage: python vuldeepecker.py [filename]")
         exit()
     filename = sys.argv[1]
-    # parse_file(filename)
-    base = os.path.splitext(os.path.basename(filename))[0]
-    # vector_filename = base + "_gadget_vectors.pkl"
-    vector_length = 50
-    vec = get_vectors(filename, vector_length)
-    print("done")
-    # if os.path.exists(vector_filename):
-    #     df = pandas.read_pickle(vector_filename)
-    # else:
-    #     df = get_vectors_df(filename, vector_length)
-    #     df.to_pickle(vector_filename)
-    # blstm = BLSTM(df,name=base)
-    # blstm.train()
-    # blstm.test()
+    cgd_data = CGDDataset(filename, 100)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    config = DefaultTrainConfig()
+    model = BLSTM(
+        config.input_size,
+        config.hidden_size,
+        config.num_layers,
+        config.num_classes,
+        config.dropout,
+        device,
+    ).to(device)
+    print("[*] training model...")
+    # criterion = torch.nn.CrossEntropyLoss()
+    # optimizer = torch.optim.Adamax(
+    #     model.parameters(), lr=config.learning_rate
+    # )
+
+    fitter = Fitter(model, device, config)
+    total_result = fitter.cross_validation(cgd_data)
+    print(total_result)
 
 if __name__ == "__main__":
     main()
