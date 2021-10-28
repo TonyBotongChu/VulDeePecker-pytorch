@@ -46,7 +46,36 @@ def main():
 
     fitter = Fitter(model, device, config)
     total_result = fitter.cross_validation(cgd_data)
-    print(total_result)
+    # if result.output is None:
+    #     f = open("./cross_val.csv", "w")
+    # else:
+    #     f = result.output
+    f = open("./cross_val.csv", "w")
+    f.write(
+        "fold,epoch,train_f1,val_f1,train_acc,val_acc,train_recall,val_recall,train_loss,val_loss\n"
+    )
+    for fold, fold_result in enumerate(total_result):
+        for epoch, (
+                train_summary_loss,
+                train_total_score,
+                val_summary_loss,
+                val_total_score,
+        ) in enumerate(fold_result):
+            print(
+                fold + 1,
+                epoch + 1,
+                train_total_score.f1,
+                val_total_score.f1,
+                train_total_score.precision,
+                val_total_score.precision,
+                train_total_score.recall,
+                val_total_score.recall,
+                train_summary_loss.avg,
+                val_summary_loss.avg,
+                sep=",",
+                file=f,
+            )
+    f.close()
 
 if __name__ == "__main__":
     main()
