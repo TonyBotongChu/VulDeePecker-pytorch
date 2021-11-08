@@ -6,11 +6,8 @@ from torch.utils.data.dataset import T_co
 
 from clean_gadget import clean_gadget
 
-# class CodeGadget(NamedTuple):
-#     info:str
-#     gadget:list
-#     label:int
-from vectorize_gadget import GadgetVectorizer
+from vectorize_bert import BERTVectorizer
+# from vectorize_gadget import GadgetVectorizer
 
 
 class CGDDataset(Dataset):
@@ -18,7 +15,8 @@ class CGDDataset(Dataset):
         self.infos = []
         self.cgds = []
         self.labels = []
-        self.vectorizer = GadgetVectorizer(vector_length)
+        # self.vectorizer = GadgetVectorizer(vector_length)
+        self.vectorizer = BERTVectorizer(vector_length)
         with open(filename, "r", encoding="utf8") as file:
             current_case = []
             for line in file:
@@ -30,11 +28,11 @@ class CGDDataset(Dataset):
                     gadget = clean_gadget(current_case[1:-1])
                     self.cgds.append(gadget)
                     self.labels.append(int(current_case[-1]))
-                    self.vectorizer.add_gadget(gadget)
+                    # self.vectorizer.add_gadget(gadget)
                     current_case = []
                 else:
                     current_case.append(stripped)
-        self.vectorizer.train_model()
+        # self.vectorizer.train_model()
 
     def __len__(self):
         return len(self.labels)

@@ -15,7 +15,7 @@ from cgd_data import CGDDataset
 from config import DefaultTrainConfig
 from blstm import BLSTM
 from fit import Fitter
-from vectorize_gadget import GadgetVectorizer
+# from vectorize_gadget import GadgetVectorizer
 
 
 """
@@ -23,10 +23,12 @@ Gets filename, either loads vector DataFrame if exists or creates it if not
 Instantiate neural network, pass data to it, train, test, print accuracy
 """
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python vuldeepecker.py [filename]")
-        exit()
-    filename = sys.argv[1]
+    if len(sys.argv) == 2:
+        filename = sys.argv[1]
+        # print("Usage: python vuldeepecker.py [filename]")
+        # exit()
+    else:
+        filename = "cwe119_cgd.txt"
     cgd_data = CGDDataset(filename, 100)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config = DefaultTrainConfig()
@@ -50,32 +52,32 @@ def main():
     #     f = open("./cross_val.csv", "w")
     # else:
     #     f = result.output
-    f = open("./cross_val.csv", "w")
-    f.write(
-        "fold,epoch,train_f1,val_f1,train_acc,val_acc,train_recall,val_recall,train_loss,val_loss\n"
-    )
-    for fold, fold_result in enumerate(total_result):
-        for epoch, (
-                train_summary_loss,
-                train_total_score,
-                val_summary_loss,
-                val_total_score,
-        ) in enumerate(fold_result):
-            print(
-                fold + 1,
-                epoch + 1,
-                train_total_score.f1,
-                val_total_score.f1,
-                train_total_score.precision,
-                val_total_score.precision,
-                train_total_score.recall,
-                val_total_score.recall,
-                train_summary_loss.avg,
-                val_summary_loss.avg,
-                sep=",",
-                file=f,
-            )
-    f.close()
+    # f = open("./cross_val.csv", "w")
+    # f.write(
+    #     "fold,epoch,train_f1,val_f1,train_acc,val_acc,train_recall,val_recall,train_loss,val_loss\n"
+    # )
+    # for fold, fold_result in enumerate(total_result):
+    #     for epoch, (
+    #             train_summary_loss,
+    #             train_total_score,
+    #             val_summary_loss,
+    #             val_total_score,
+    #     ) in enumerate(fold_result):
+    #         print(
+    #             fold + 1,
+    #             epoch + 1,
+    #             train_total_score.f1,
+    #             val_total_score.f1,
+    #             train_total_score.precision,
+    #             val_total_score.precision,
+    #             train_total_score.recall,
+    #             val_total_score.recall,
+    #             train_summary_loss.avg,
+    #             val_summary_loss.avg,
+    #             sep=",",
+    #             file=f,
+    #         )
+    # f.close()
 
 if __name__ == "__main__":
     main()

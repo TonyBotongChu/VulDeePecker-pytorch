@@ -6,6 +6,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 from gensim.models import Word2Vec
+from gensim.models import KeyedVectors as word2vec
 import numpy
 
 # Sets for operators
@@ -38,45 +39,7 @@ class GadgetVectorizer:
         self.forward_slices = 0
         self.backward_slices = 0
 
-    """
-    Takes a line of C++ code (string) as input
-    Tokenizes C++ code (breaks down into identifier, variables, keywords, operators)
-    Returns a list of tokens, preserving order in which they appear
-    """
-    @staticmethod
-    def tokenize(line):
-        tmp, w = [], []
-        i = 0
-        while i < len(line):
-            # Ignore spaces and combine previously collected chars to form words
-            if line[i] == ' ':
-                tmp.append(''.join(w))
-                tmp.append(line[i])
-                w = []
-                i += 1
-            # Check operators and append to final list
-            elif line[i:i+3] in operators3:
-                tmp.append(''.join(w))
-                tmp.append(line[i:i+3])
-                w = []
-                i += 3
-            elif line[i:i+2] in operators2:
-                tmp.append(''.join(w))
-                tmp.append(line[i:i+2])
-                w = []
-                i += 2
-            elif line[i] in operators1:
-                tmp.append(''.join(w))
-                tmp.append(line[i])
-                w = []
-                i += 1
-            # Character appended to word list
-            else:
-                w.append(line[i])
-                i += 1
-        # Filter out irrelevant strings
-        res = list(filter(lambda c: c != '', tmp))
-        return list(filter(lambda c: c != ' ', res))
+
 
     """
     Tokenize entire gadget
@@ -131,7 +94,12 @@ class GadgetVectorizer:
     def train_model(self):
         # Set min_count to 1 to prevent out-of-vocabulary errors
         # word2vec 4 api
-        model = Word2Vec(self.gadgets, min_count=1, vector_size=self.vector_length, sg=1)
+        # model = Word2Vec(self.gadgets, min_count=1, vector_size=self.vector_length, sg=1)
+        # vectors_text_path = "gensim-model/java14_model/saved_model_iter8.release.data-00000-of-00001"
+        vectors_text_path = "gensim-model/token_vecs.txt"
+        print(vectors_text_path)
+        # model = Word2Vec.load(vectors_text_path)
+        model = word2vec.load_word2vec_format(vectors_text_path, binary=False)
         self.embeddings = model.wv
         del model
         del self.gadgets
