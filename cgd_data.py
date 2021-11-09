@@ -10,11 +10,40 @@ from vectorize_bert import BERTVectorizer
 # from vectorize_gadget import GadgetVectorizer
 
 
+def parse_info_dic(info: str):
+    info_list = info.strip().split()
+    file_info = info_list[1]
+    vul_name = file_info.split("/")[0]
+    file_name = file_info.split("/")[1]
+
+    # if vulerability name is numeric, then it is from SARD
+    # otherwise it's from NVD
+    if vul_name.isnumeric():
+        project_name = "SARD"
+        project_version = ""
+    else:
+        project_info = file_name.split("_"+vul_name)[0]
+        project_name = project_info.split("_")[0]
+        project_version = project_info.split("_")[1]
+    info_dic = {
+        "num" : info_list[0],
+        "file_info": file_info,
+        "cwe": vul_name,
+        "project_name": project_name,
+        "project_version": project_version,
+        "language": info_list[2],
+        "line": info_list[3]
+    }
+    return info_dic
+
+
 class CGDDataset(Dataset):
+
     def __init__(self, filename: str, vector_length: int):
         self.infos = []
         self.cgds = []
         self.labels = []
+        self.project = []
         # self.vectorizer = GadgetVectorizer(vector_length)
         self.vectorizer = BERTVectorizer(vector_length)
         with open(filename, "r", encoding="utf8") as file:
@@ -24,7 +53,9 @@ class CGDDataset(Dataset):
                 if not stripped:
                     continue
                 if "-" * 33 in line and current_case:
-                    self.infos.append(current_case[0])
+                    info_dic = parse_info_dic(current_case[0])
+                    self.infos.append(info_dic)
+                    self.project.append(info_dic["project_name"])
                     gadget = clean_gadget(current_case[1:-1])
                     self.cgds.append(gadget)
                     self.labels.append(int(current_case[-1]))
